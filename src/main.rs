@@ -20,125 +20,17 @@ use numformat::{print_formatted_value, NumFormat, PrintFormattedValue};
 mod randomsource;
 use randomsource::RandomSource;
 
-use clap::{App, Arg};
 use std::env;
 use std::fmt;
 use std::str::FromStr;
 
-const VERSION: &str = env!("CARGO_PKG_VERSION");
-const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
-
-struct Config {
-    debug: bool,
-    bits: u32,
-    alphabet: String,
-    delimiter: String,
-    count: usize,
-    rngtest: Option<(RandomSource, u32, NumFormat)>,
-}
+mod cli;
+mod config;
+use config::Config;
 
 fn main() {
-    let matches = App::new(PACKAGE_NAME)
-        .version(VERSION)
-        .about("Generates random passwords and keys.")
-        .arg(
-            Arg::with_name("debug")
-                .long("debug")
-                .help("Enable debug mode"),
-        )
-        .arg(
-            Arg::with_name("alphabet")
-                .short("a")
-                .long("alphabet")
-                .value_name("ALPHABET")
-                .possible_values(&["words-fi", "commonsafe", "normal", "ascii", "assembly"])
-                .help("Specify the alphabet to use for random value generation"),
-        )
-        .arg(
-            Arg::with_name("bits")
-                .short("b")
-                .long("bits")
-                .value_name("BITS")
-                .help("Specify the amount of bits for each random value"),
-        )
-        .arg(
-            Arg::with_name("count")
-                .short("c")
-                .long("count")
-                .value_name("COUNT")
-                .help("Number of passwords to generate"),
-        )
-        .arg(
-            Arg::with_name("delimiter")
-                .short("d")
-                .long("delimiter")
-                .value_name("DELIMITER")
-                .requires_all(&["bits", "alphabet"])
-                .help("Sets the delimiter between each letter or word")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("rngtest")
-                .short("r")
-                .long("rngtest")
-                .value_name("generator")
-                .possible_values(&["rdrand", "os", "cpujitter", "cpujitter-raw"])
-                .takes_value(true)
-                .help("Optional test mode for RNG testing. Will provide raw bytes to stdout.")
-                .conflicts_with_all(&["bits", "alphabet", "count"]), // Conflicts with other options
-        )
-        .arg(
-            Arg::with_name("size")
-                .short("s")
-                .long("size")
-                .value_name("data size (u64 words)")
-                .requires_all(&["rngtest"]) // Requires rngtest if used
-                .takes_value(true)
-                .help("Specifies the generated data size in u64 words for RNG testing.")
-                .conflicts_with_all(&["bits", "alphabet", "count"]), // Conflicts with other options
-        )
-        .arg(
-            Arg::with_name("format")
-                .long("format")
-                .short("f")
-                .value_name("format")
-                .requires_all(&["rngtest"]) // Requires rngtest if used
-                .possible_values(&["raw", "u8", "u16", "u32", "u64"])
-                .required_if("rngtest", "generator") // Required if rngtest option is used
-                .help("Specifies the data format for RNG testing."),
-        )
-        .get_matches();
-
-    let config = Config {
-        debug: matches.is_present("debug"),
-        bits: matches
-            .value_of("bits")
-            .map(|b| b.parse().unwrap())
-            .unwrap_or(256),
-        alphabet: matches
-            .value_of("alphabet")
-            .unwrap_or("commonsafe")
-            .to_string(),
-        count: matches
-            .value_of("count")
-            .map(|i| i.parse::<usize>().unwrap_or(1))
-            .unwrap_or(1),
-        delimiter: matches.value_of("delimiter").unwrap_or("").to_string(),
-
-        rngtest: if matches.is_present("rngtest") {
-            let generator_str = matches.value_of("rngtest").unwrap();
-            let generator = RandomSource::from_str(generator_str).expect("Invalid generator");
-            let data_size = matches
-                .value_of("size")
-                .map(|s| s.parse::<u32>().unwrap_or(1))
-                .unwrap_or(1);
-            let num_format_str = matches.value_of("format").unwrap_or("u64");
-            let num_format = NumFormat::from_str(num_format_str).expect("Invalid number format");
-            Some((generator, data_size, num_format))
-        } else {
-            None
-        },
-    };
+    let matches = cli::get_matches();
+    let config: Config = matches.into();
 
     if let Some((generator, data_size, data_format)) = &config.rngtest {
         let num_values = *data_size as u64;
