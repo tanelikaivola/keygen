@@ -13,11 +13,11 @@ impl FromStr for NumFormat {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "raw" => Ok(NumFormat::RawBinary),
-            "u8" => Ok(NumFormat::U8),
-            "u16" => Ok(NumFormat::U16),
-            "u32" => Ok(NumFormat::U32),
-            "u64" => Ok(NumFormat::U64),
+            "raw" => Ok(Self::RawBinary),
+            "u8" => Ok(Self::U8),
+            "u16" => Ok(Self::U16),
+            "u32" => Ok(Self::U32),
+            "u64" => Ok(Self::U64),
             _ => Err(()),
         }
     }
@@ -34,7 +34,7 @@ pub fn print_formatted_value(value: u64, mode: NumFormat) {
         NumFormat::U8 => {
             let bytes: [u8; 8] = value.to_be_bytes();
             for byte in &bytes {
-                println!("{}", byte);
+                println!("{byte}");
             }
         }
         NumFormat::U16 => {
@@ -46,7 +46,7 @@ pub fn print_formatted_value(value: u64, mode: NumFormat) {
                 u16::from_be_bytes([bytes[6], bytes[7]]),
             ];
             for u16_value in &u16_values {
-                println!("{}", u16_value);
+                println!("{u16_value}");
             }
         }
         NumFormat::U32 => {
@@ -56,13 +56,13 @@ pub fn print_formatted_value(value: u64, mode: NumFormat) {
                 u32::from_be_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]),
             ];
             for u32_value in &u32_values {
-                println!("{}", u32_value);
+                println!("{u32_value}");
             }
         }
         NumFormat::U64 => {
             let bytes: [u8; 8] = value.to_be_bytes();
             let u64_value = u64::from_be_bytes(bytes);
-            println!("{}", u64_value);
+            println!("{u64_value}");
         }
     }
 }
