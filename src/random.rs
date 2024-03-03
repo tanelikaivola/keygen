@@ -44,7 +44,7 @@ struct BitVector {
 }
 
 impl BitVector {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self { bits: Vec::new() }
     }
 
@@ -100,7 +100,7 @@ const fn check_entropy_pool() -> Result<()> {
 ///
 /// On Linux will use `getrandom()` syscall. Fallback to /dev/urandom and /dev/random
 /// On Windows will use `BCryptGenRandom()` API.
-/// On MacOS will use `getentropy()`. Fallback to /dev/urandom
+/// On macOS will use `getentropy()`. Fallback to /dev/urandom
 pub fn generate_u64_os() -> Result<u64> {
     let mut random_bytes = [0u8; 8];
 
