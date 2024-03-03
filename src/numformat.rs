@@ -1,6 +1,7 @@
+use clap::ValueEnum;
 use std::str::FromStr;
 
-#[derive(Clone, Copy)]
+#[derive(ValueEnum, Clone, Copy, Debug)]
 pub enum NumFormat {
     RawBinary,
     U8,

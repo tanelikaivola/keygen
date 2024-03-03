@@ -29,17 +29,14 @@ pub mod commonsafe;
 pub mod normal;
 pub mod wordsfi;
 
-impl FromStr for Box<dyn Alphabet> {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        match s {
-            "words-fi" => Ok(Box::new(wordsfi::WordsFi {})),
-            "commonsafe" => Ok(Box::new(commonsafe::CommonSafe {})),
-            "normal" => Ok(Box::new(normal::Normal {})),
-            "ascii" => Ok(Box::new(ascii::Ascii {})),
-            "assembly" => Ok(Box::new(assembly::Assembly {})),
-            _ => Err(Error::InvalidAlphabet(s.into())),
+impl From<crate::cli::Alphabet> for Box<dyn Alphabet> {
+    fn from(alphabet: crate::cli::Alphabet) -> Self {
+        match alphabet {
+            crate::cli::Alphabet::WordsFi => Box::new(wordsfi::WordsFi {}),
+            crate::cli::Alphabet::Commonsafe => Box::new(commonsafe::CommonSafe {}),
+            crate::cli::Alphabet::Normal => Box::new(normal::Normal {}),
+            crate::cli::Alphabet::Ascii => Box::new(ascii::Ascii {}),
+            crate::cli::Alphabet::Assembly => Box::new(assembly::Assembly {}),
         }
     }
 }

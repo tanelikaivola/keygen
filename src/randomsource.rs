@@ -1,11 +1,13 @@
+use clap::ValueEnum;
 use std::{fmt, str::FromStr};
 
+#[derive(ValueEnum, Clone)]
 pub enum RandomSource {
     Combined,
     Rdrand,
     Os,
-    CpuJitter,
-    CpuJitterRaw,
+    Cpujitter,
+    CpujitterRaw,
 }
 
 impl fmt::Debug for RandomSource {
@@ -14,8 +16,8 @@ impl fmt::Debug for RandomSource {
             Self::Combined => write!(f, "combined"),
             Self::Rdrand => write!(f, "rdrand"),
             Self::Os => write!(f, "os"),
-            Self::CpuJitter => write!(f, "cpujitter"),
-            Self::CpuJitterRaw => write!(f, "cpujitter-raw"),
+            Self::Cpujitter => write!(f, "cpujitter"),
+            Self::CpujitterRaw => write!(f, "cpujitter-raw"),
         }
     }
 }
@@ -27,8 +29,8 @@ impl FromStr for RandomSource {
             "combined" => Ok(Self::Combined),
             "rdrand" => Ok(Self::Rdrand),
             "os" => Ok(Self::Os),
-            "cpujitter" => Ok(Self::CpuJitter),
-            "cpujitter-raw" => Ok(Self::CpuJitterRaw),
+            "cpujitter" => Ok(Self::Cpujitter),
+            "cpujitter-raw" => Ok(Self::CpujitterRaw),
             _ => Err(()),
         }
     }

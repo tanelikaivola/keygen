@@ -23,12 +23,12 @@ use std::fmt;
 use std::str::FromStr;
 
 mod cli;
+use cli::{Cli, Parser};
 mod config;
 use config::Config;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let matches = cli::get_matches();
-    let config: Config = matches.into();
+    let config: Config = cli::Cli::parse().into();
 
     if let Some((generator, data_size, data_format)) = &config.rngtest {
         let num_values = *data_size as u64;
@@ -37,8 +37,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let generator_fn: fn() -> Result<u64, _> = match generator {
             RandomSource::Rdrand => random::generate_u64_rdrand,
             RandomSource::Os => random::generate_u64_os,
-            RandomSource::CpuJitter => random::generate_u64_cpujitter,
-            RandomSource::CpuJitterRaw => random::generate_u64_cpujitter_raw,
+            RandomSource::Cpujitter => random::generate_u64_cpujitter,
+            RandomSource::CpujitterRaw => random::generate_u64_cpujitter_raw,
             _ => unimplemented!(),
         };
 
@@ -54,17 +54,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    let alphabet: Box<dyn Alphabet> = config.alphabet.parse()?;
+    let alphabet: Box<dyn Alphabet> = config.alphabet.into();
 
     if config.debug {
-        println!("Using alphabet: {}", config.alphabet);
+        println!("Using alphabet: {:?}", config.alphabet);
         println!("alphabet_count: {}", alphabet.count());
         println!("request bits: {}", config.bits);
     }
 
     // Find the number of characters needed
     let bits_per_element = alphabet.bits_per_element();
-    let num_elements = (config.bits as f64 / bits_per_element as f64).ceil() as u32;
+    let num_elements = (config.bits as f64 / bits_per_element).ceil() as u32;
 
     if config.debug {
         println!("Bits per element: {bits_per_element}");
