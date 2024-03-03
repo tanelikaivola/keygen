@@ -1,17 +1,23 @@
 #![allow(unused_imports)]
 #![allow(unused_assignments)]
 
-#[path = "random.rs"] mod random;
-use random::{generate_u64_os, generate_u64_rdrand, generate_u64_cpujitter, generate_u64};
+#[path = "random.rs"]
+mod random;
+use random::{generate_u64, generate_u64_cpujitter, generate_u64_os, generate_u64_rdrand};
 
-#[path = "alphabet.rs"] mod alphabet;
-use alphabet::{alphabet_commonsafe_get_element, alphabet_commonsafe_get_count, alphabet_normal_get_element, alphabet_normal_get_count, alphabet_ascii_get_element, alphabet_ascii_get_count, alphabet_assembly_get_element, alphabet_assembly_get_count};
+#[path = "alphabet.rs"]
+mod alphabet;
+use alphabet::{
+    alphabet_ascii_get_count, alphabet_ascii_get_element, alphabet_assembly_get_count,
+    alphabet_assembly_get_element, alphabet_commonsafe_get_count, alphabet_commonsafe_get_element,
+    alphabet_normal_get_count, alphabet_normal_get_element,
+};
 use zeroize::Zeroize;
 
+use clap::{App, Arg};
 use std::env;
 use std::fmt;
 use std::str::FromStr;
-use clap::{App, Arg};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
@@ -84,12 +90,10 @@ impl FromStr for NumFormat {
 fn print_formatted_value(value: u64, mode: NumFormat) {
     match mode {
         NumFormat::RawBinary => {
-            
             for shift in (0..=56).step_by(8) {
                 let byte = ((value >> shift) & 0xFF) as u8;
                 print!("{}", byte as char);
             }
-            
         }
         NumFormat::U8 => {
             let bytes: [u8; 8] = value.to_be_bytes();
@@ -124,7 +128,6 @@ fn print_formatted_value(value: u64, mode: NumFormat) {
             let u64_value = u64::from_be_bytes(bytes);
             println!("{}", u64_value);
         }
-
     }
 }
 
@@ -164,9 +167,9 @@ fn main() {
                 .short("d")
                 .long("delimiter")
                 .value_name("DELIMITER")
-                .requires_all(&["bits", "alphabet"]) 
+                .requires_all(&["bits", "alphabet"])
                 .help("Sets the delimiter between each letter or word")
-                .takes_value(true),            
+                .takes_value(true),
         )
         .arg(
             Arg::with_name("rngtest")
@@ -202,21 +205,33 @@ fn main() {
 
     let config = Config {
         debug: matches.is_present("debug"),
-        bits: matches.value_of("bits").map(|b| b.parse().unwrap()).unwrap_or(256),
-        alphabet: matches.value_of("alphabet").unwrap_or("commonsafe").to_string(),
-        count: matches.value_of("count").map(|i| i.parse::<usize>().unwrap_or(1)).unwrap_or(1),
+        bits: matches
+            .value_of("bits")
+            .map(|b| b.parse().unwrap())
+            .unwrap_or(256),
+        alphabet: matches
+            .value_of("alphabet")
+            .unwrap_or("commonsafe")
+            .to_string(),
+        count: matches
+            .value_of("count")
+            .map(|i| i.parse::<usize>().unwrap_or(1))
+            .unwrap_or(1),
         delimiter: matches.value_of("delimiter").unwrap_or("").to_string(),
 
         rngtest: if matches.is_present("rngtest") {
             let generator_str = matches.value_of("rngtest").unwrap();
             let generator = RandomSource::from_str(generator_str).expect("Invalid generator");
-            let data_size = matches.value_of("size").map(|s| s.parse::<u32>().unwrap_or(1)).unwrap_or(1);
+            let data_size = matches
+                .value_of("size")
+                .map(|s| s.parse::<u32>().unwrap_or(1))
+                .unwrap_or(1);
             let num_format_str = matches.value_of("format").unwrap_or("u64");
             let num_format = NumFormat::from_str(num_format_str).expect("Invalid number format");
             Some((generator, data_size, num_format))
         } else {
             None
-        }
+        },
     };
 
     if let Some((generator, data_size, data_format)) = &config.rngtest {
@@ -246,13 +261,11 @@ fn main() {
         std::process::exit(0);
     }
 
-
     let mut alphabet_item: fn(usize) -> Option<String> = |_| None;
     let mut alphabet_count: fn() -> usize = || 0;
-    
+
     // Match the alphabet count and generator functions to the selected alphabet
     match config.alphabet.as_str() {
-    
         "words-fi" => {
             alphabet_count = alphabet::alphabet_wordsfi_get_count;
             alphabet_item = alphabet::alphabet_wordsfi_get_element;
@@ -276,7 +289,7 @@ fn main() {
         _ => {
             print!("Error: Unknown alphabet specified. Exiting");
             std::process::exit(1);
-        },
+        }
     }
 
     if config.debug {
@@ -286,7 +299,7 @@ fn main() {
     }
 
     // Find the number of characters needed
-    let bits_per_element= (alphabet_count() as f64).log2();
+    let bits_per_element = (alphabet_count() as f64).log2();
     let num_elements = (config.bits as f64 / bits_per_element as f64).ceil() as u32;
 
     if config.debug {
@@ -307,7 +320,7 @@ fn main() {
                     random_value = val;
                 }
             }
-            
+
             // get the corresponding alphabet element
             let random_index = (random_value.unwrap() % alphabet_count() as u64) as usize;
             let random_element = alphabet_item(random_index).unwrap();

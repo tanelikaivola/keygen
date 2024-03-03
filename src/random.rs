@@ -1,18 +1,17 @@
-#[path = "hmac_drbg.rs"] mod hmac_drbg;
+#[path = "hmac_drbg.rs"]
+mod hmac_drbg;
 use hmac_drbg::HmacDrbg;
 
-use std::fmt;
+use getrandom::getrandom;
+use lazy_static::lazy_static;
 use std::arch::asm;
-use std::process;
+use std::fmt;
 use std::fs::read_to_string;
+use std::process;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tiny_keccak::Hasher;
 use tiny_keccak::Sha3;
-use lazy_static::lazy_static;
 use zeroize::Zeroize;
-use getrandom::getrandom;
-
-
 
 fn u64_to_bytes(val: u64) -> [u8; 8] {
     [
@@ -27,7 +26,6 @@ fn u64_to_bytes(val: u64) -> [u8; 8] {
     ]
 }
 
-
 fn vec_u8_to_u64(bytes: &[u8]) -> Option<u64> {
     if bytes.len() != 8 {
         return None; // Ensure that the input has exactly 8 bytes
@@ -41,11 +39,9 @@ fn vec_u8_to_u64(bytes: &[u8]) -> Option<u64> {
     Some(result)
 }
 
-
 struct BitVector {
     bits: Vec<bool>,
 }
-
 
 impl BitVector {
     fn new() -> Self {
@@ -68,7 +64,7 @@ impl BitVector {
             }
         }
         result
-    }    
+    }
 }
 
 impl fmt::Debug for BitVector {
@@ -76,7 +72,6 @@ impl fmt::Debug for BitVector {
         write!(f, "BitVector {{ bits: {:?} }}", self.bits)
     }
 }
-
 
 #[cfg(target_os = "linux")]
 fn check_entropy_pool() {
@@ -86,7 +81,10 @@ fn check_entropy_pool() {
         let entropy_avail: u64 = entropy_avail.trim().parse().unwrap_or(0);
 
         if entropy_avail < MIN_ENTROPY_THRESHOLD {
-            eprintln!("Error: Entropy pool is low ({} bytes). Exiting.", entropy_avail);
+            eprintln!(
+                "Error: Entropy pool is low ({} bytes). Exiting.",
+                entropy_avail
+            );
             process::exit(1);
         }
     } else {
@@ -99,7 +97,6 @@ fn check_entropy_pool() {
 fn check_entropy_pool() {
     // On non-Linux systems (e.g., Windows), we can not check the amount of entropy available.
 }
-
 
 /* Return U64 random number from the OS.
    On Linux will use getrandom() syscall. Fallback to /dev/urandom and /dev/random
@@ -116,10 +113,9 @@ pub fn generate_u64_os() -> Option<u64> {
         Some(random_u64)
     } else {
         eprintln!("Error: OS rand failed. Exiting.");
-        std::process::exit(1);        
+        std::process::exit(1);
     }
 }
-
 
 /* Return U64 random number from the CPU RDRAND instruction.
    If the CPU does not support RDRAND, the program will exit.
@@ -141,10 +137,9 @@ pub fn generate_u64_rdrand() -> Option<u64> {
         Some(result)
     } else {
         eprintln!("Error: rdrand failed. Exiting.");
-        std::process::exit(1);        
+        std::process::exit(1);
     }
 }
-
 
 // generate_u64_cpujitter()
 // SHA3 (Keccack) is used to provide a u64 random number from 512 bits of cpujitter entropy bits.
@@ -152,7 +147,6 @@ pub fn generate_u64_rdrand() -> Option<u64> {
 // Also, using the HMAC DRBG with the current personalization string (*that contains the timestamp*)
 // would result in difficulties when estimating the randomness of the generated random numbers.
 pub fn generate_u64_cpujitter() -> Option<u64> {
-
     // Let's take 512 (8 * 64) bits of cpujitter entropy
     let mut combined_data = Vec::new();
     for _ in 0..8 {
@@ -171,7 +165,6 @@ pub fn generate_u64_cpujitter() -> Option<u64> {
     let random_value = vec_u8_to_u64(&hash_result[..8]);
     random_value
 }
-
 
 /* Returns U64 from collected CPU jitter. The amount of raw entropy is around 6bits / byte. */
 pub fn generate_u64_cpujitter_raw() -> Option<u64> {
@@ -202,7 +195,9 @@ pub fn generate_u64_cpujitter_raw() -> Option<u64> {
 
         loop_count += 1;
         if loop_count >= 32768 {
-            eprintln!("Error: Unable to create cpu jitter entropy. System too busy or idle? Exiting.");
+            eprintln!(
+                "Error: Unable to create cpu jitter entropy. System too busy or idle? Exiting."
+            );
             std::process::exit(1);
         }
     }
@@ -210,8 +205,6 @@ pub fn generate_u64_cpujitter_raw() -> Option<u64> {
     let result = bit_vector.to_u64();
     Some(result)
 }
-
-
 
 lazy_static! {
     static ref PREVIOUS_TIMESTAMP: std::sync::Mutex<(u64, u32)> = std::sync::Mutex::new((0, 0));
@@ -223,13 +216,17 @@ lazy_static! {
 fn generate_personalization_string() -> [u8; 32] {
     let mut personalization_string: [u8; 32] = [0; 32];
 
-    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards");
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards");
     let timestamp_secs = timestamp.as_secs();
     let timestamp_nanos = timestamp.subsec_nanos();
 
     // Compare with previous timestamp
     let mut prev_timestamp = PREVIOUS_TIMESTAMP.lock().unwrap();
-    if timestamp_secs < prev_timestamp.0 || (timestamp_secs == prev_timestamp.0 && timestamp_nanos <= prev_timestamp.1) {
+    if timestamp_secs < prev_timestamp.0
+        || (timestamp_secs == prev_timestamp.0 && timestamp_nanos <= prev_timestamp.1)
+    {
         eprintln!("Error: time went backwards. Exiting.");
         std::process::exit(1);
     }
@@ -251,12 +248,8 @@ fn generate_personalization_string() -> [u8; 32] {
     personalization_string
 }
 
-
-
-
 // Generate a random u64 combining three different sources
 pub fn generate_u64() -> Option<u64> {
-
     // Generate a 1536 bit seed from three different random number sources.
     // Thats 8 * 64 = 512 bits from each source.
     let mut seed: Vec<u8> = Vec::new();
