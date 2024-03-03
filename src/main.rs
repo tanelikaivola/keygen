@@ -7,11 +7,7 @@ mod random;
 use random::{generate_u64, generate_u64_cpujitter, generate_u64_os, generate_u64_rdrand};
 
 mod alphabet;
-use alphabet::{
-    alphabet_ascii_get_count, alphabet_ascii_get_element, alphabet_assembly_get_count,
-    alphabet_assembly_get_element, alphabet_commonsafe_get_count, alphabet_commonsafe_get_element,
-    alphabet_normal_get_count, alphabet_normal_get_element,
-};
+use alphabet::Alphabet;
 use zeroize::Zeroize;
 
 mod numformat;
@@ -28,7 +24,7 @@ mod cli;
 mod config;
 use config::Config;
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = cli::get_matches();
     let config: Config = matches.into();
 
@@ -52,46 +48,16 @@ fn main() {
 
         std::process::exit(0);
     }
-
-    let mut alphabet_item: fn(usize) -> Option<String> = |_| None;
-    let mut alphabet_count: fn() -> usize = || 0;
-
-    // Match the alphabet count and generator functions to the selected alphabet
-    match config.alphabet.as_str() {
-        "words-fi" => {
-            alphabet_count = alphabet::alphabet_wordsfi_get_count;
-            alphabet_item = alphabet::alphabet_wordsfi_get_element;
-        }
-        "commonsafe" => {
-            alphabet_count = alphabet::alphabet_commonsafe_get_count;
-            alphabet_item = alphabet::alphabet_commonsafe_get_element;
-        }
-        "normal" => {
-            alphabet_count = alphabet::alphabet_normal_get_count;
-            alphabet_item = alphabet::alphabet_normal_get_element;
-        }
-        "ascii" => {
-            alphabet_count = alphabet::alphabet_ascii_get_count;
-            alphabet_item = alphabet::alphabet_ascii_get_element;
-        }
-        "assembly" => {
-            alphabet_count = alphabet::alphabet_assembly_get_count;
-            alphabet_item = alphabet::alphabet_assembly_get_element;
-        }
-        _ => {
-            print!("Error: Unknown alphabet specified. Exiting");
-            std::process::exit(1);
-        }
-    }
+    let alphabet: Box<dyn Alphabet> = config.alphabet.parse()?;
 
     if config.debug {
         println!("Using alphabet: {}", config.alphabet);
-        println!("alphabet_count: {}", alphabet_count());
+        println!("alphabet_count: {}", alphabet.count());
         println!("request bits: {}", config.bits);
     }
 
     // Find the number of characters needed
-    let bits_per_element = (alphabet_count() as f64).log2();
+    let bits_per_element = alphabet.bits_per_element();
     let num_elements = (config.bits as f64 / bits_per_element as f64).ceil() as u32;
 
     if config.debug {
@@ -105,17 +71,18 @@ fn main() {
 
         for i in 0..num_elements {
             // pull out a random value that does not result in modulo bias
-            let mut random_value: Option<u64> = None;
-            while random_value.is_none() {
-                let val = generate_u64();
-                if val.unwrap() <= (u64::MAX - (alphabet_count() as u64)) {
-                    random_value = val;
+            let random_value = {
+                loop {
+                    let val = generate_u64().unwrap();
+                    if val <= (u64::MAX - (alphabet.count() as u64)) {
+                        break val;
+                    }
                 }
-            }
+            };
 
             // get the corresponding alphabet element
-            let random_index = (random_value.unwrap() % alphabet_count() as u64) as usize;
-            let random_element = alphabet_item(random_index).unwrap();
+            let random_index = (random_value % alphabet.count() as u64) as usize;
+            let random_element = alphabet.item(random_index).unwrap();
             password_string.push_str(&random_element);
             if i < num_elements - 1 {
                 password_string.push_str(&config.delimiter);
