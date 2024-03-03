@@ -6,9 +6,16 @@
    No reseeding support, or any guarantees that this is correct.
 */
 
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Reseed interval reached")]
+    ReseedIntervalReached,
+}
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
 use ring::hmac;
 
-const MAX_RESEED_INTERVAL: u32 = 1000000;
+const MAX_RESEED_INTERVAL: u32 = 1_000_000;
 
 pub struct HmacDrbg {
     v: [u8; 32],
@@ -27,18 +34,16 @@ impl HmacDrbg {
         h.update(seed);
         v.copy_from_slice(h.sign().as_ref());
 
-        HmacDrbg {
+        Self {
             key,
             v,
             reseed_counter: 1,
         }
     }
 
-    pub fn generate_bytes(&mut self, requested_bytes: usize) -> Vec<u8> {
+    pub fn generate_bytes(&mut self, requested_bytes: usize) -> Result<Vec<u8>> {
         if self.reseed_counter > MAX_RESEED_INTERVAL {
-            // Reseed logic here
-            eprintln!("Error: RNG reseed interval reached. Exiting.");
-            std::process::exit(1);
+            return Err(Error::ReseedIntervalReached);
         }
 
         let mut random_bytes = Vec::new();
@@ -61,6 +66,6 @@ impl HmacDrbg {
 
         self.reseed_counter += requested_bytes as u32;
 
-        random_bytes
+        Ok(random_bytes)
     }
 }

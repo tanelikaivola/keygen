@@ -29,6 +29,8 @@ pub enum Error {
     NotEnoughEntropy(u64),
     #[error("Unable to read entropy pool from /proc/sys/kernel/random/entropy_avail")]
     EntropyPoolUnavailable,
+    #[error("HMAC DRBG error: {0}")]
+    HmacDrbg(#[from] crate::hmac_drbg::Error),
 }
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -262,7 +264,7 @@ pub fn generate_u64() -> Result<u64, Error> {
 
     // Generate the u64 random number using HMAC DRBG
     let mut drbg = HmacDrbg::new(&seed, &personalization_string);
-    let random_bytes = drbg.generate_bytes(8);
+    let random_bytes = drbg.generate_bytes(8)?;
     let random_value = vec_u8_to_u64(&random_bytes);
 
     personalization_string.zeroize();
