@@ -15,7 +15,7 @@ use alphabet::{
 use zeroize::Zeroize;
 
 mod numformat;
-use numformat::{print_formatted_value, NumFormat};
+use numformat::{print_formatted_value, NumFormat, PrintFormattedValue};
 
 mod randomsource;
 use randomsource::RandomSource;
@@ -154,13 +154,7 @@ fn main() {
 
         for _ in 0..num_values {
             if let Some(value) = generator_fn() {
-                match data_format {
-                    NumFormat::U8 => print_formatted_value(value, NumFormat::U8),
-                    NumFormat::U16 => print_formatted_value(value, NumFormat::U16),
-                    NumFormat::U32 => print_formatted_value(value, NumFormat::U32),
-                    NumFormat::U64 => print_formatted_value(value, NumFormat::U64),
-                    NumFormat::RawBinary => print_formatted_value(value, NumFormat::RawBinary),
-                }
+                data_format.print_formatted_value(value);
             }
         }
 

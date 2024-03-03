@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+#[derive(Clone, Copy)]
 pub enum NumFormat {
     RawBinary,
     U8,
@@ -63,5 +64,15 @@ pub fn print_formatted_value(value: u64, mode: NumFormat) {
             let u64_value = u64::from_be_bytes(bytes);
             println!("{}", u64_value);
         }
+    }
+}
+
+pub trait PrintFormattedValue {
+    fn print_formatted_value(&self, value: u64);
+}
+
+impl PrintFormattedValue for NumFormat {
+    fn print_formatted_value(&self, value: u64) {
+        print_formatted_value(value, *self);
     }
 }
