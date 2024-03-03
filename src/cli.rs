@@ -1,12 +1,8 @@
+use crate::{numformat::NumFormat, randomsource::RandomSource};
 pub use clap::{Parser, ValueEnum};
 
-use crate::{numformat::NumFormat, randomsource::RandomSource};
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
-const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
-
 #[derive(Parser, Debug)]
-#[clap(name = PACKAGE_NAME, version = VERSION, about = "Generates random passwords and keys.")]
+#[clap(about, author, version)]
 pub struct Cli {
     /// Enable debug mode
     #[clap(long)]
