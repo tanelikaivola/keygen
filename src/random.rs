@@ -173,11 +173,11 @@ pub fn generate_u64_cpujitter_raw() -> Result<u64> {
     loop {
         let start = std::time::Instant::now();
         let end = std::time::Instant::now();
-        let time_diff1 = end.duration_since(start).as_nanos() as u64;
+        let time_diff1 = end.duration_since(start).as_nanos();
 
         let start = std::time::Instant::now();
         let end = std::time::Instant::now();
-        let time_diff2 = end.duration_since(start).as_nanos() as u64;
+        let time_diff2 = end.duration_since(start).as_nanos();
 
         if time_diff1 != time_diff2 {
             if time_diff1 > time_diff2 {
