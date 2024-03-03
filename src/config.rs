@@ -15,7 +15,7 @@ pub struct Config {
 
 impl From<ArgMatches<'_>> for Config {
     fn from(matches: ArgMatches) -> Self {
-        Config {
+        Self {
             debug: matches.is_present("debug"),
             bits: matches
                 .value_of("bits")

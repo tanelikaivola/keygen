@@ -11,11 +11,11 @@ pub enum RandomSource {
 impl fmt::Debug for RandomSource {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RandomSource::Combined => write!(f, "combined"),
-            RandomSource::Rdrand => write!(f, "rdrand"),
-            RandomSource::Os => write!(f, "os"),
-            RandomSource::CpuJitter => write!(f, "cpujitter"),
-            RandomSource::CpuJitterRaw => write!(f, "cpujitter-raw"),
+            Self::Combined => write!(f, "combined"),
+            Self::Rdrand => write!(f, "rdrand"),
+            Self::Os => write!(f, "os"),
+            Self::CpuJitter => write!(f, "cpujitter"),
+            Self::CpuJitterRaw => write!(f, "cpujitter-raw"),
         }
     }
 }
@@ -24,11 +24,11 @@ impl FromStr for RandomSource {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "combined" => Ok(RandomSource::Combined),
-            "rdrand" => Ok(RandomSource::Rdrand),
-            "os" => Ok(RandomSource::Os),
-            "cpujitter" => Ok(RandomSource::CpuJitter),
-            "cpujitter-raw" => Ok(RandomSource::CpuJitterRaw),
+            "combined" => Ok(Self::Combined),
+            "rdrand" => Ok(Self::Rdrand),
+            "os" => Ok(Self::Os),
+            "cpujitter" => Ok(Self::CpuJitter),
+            "cpujitter-raw" => Ok(Self::CpuJitterRaw),
             _ => Err(()),
         }
     }

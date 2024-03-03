@@ -45,7 +45,7 @@ struct BitVector {
 
 impl BitVector {
     fn new() -> Self {
-        BitVector { bits: Vec::new() }
+        Self { bits: Vec::new() }
     }
 
     fn add_bit(&mut self, bit: bool) {
