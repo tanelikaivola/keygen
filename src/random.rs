@@ -119,8 +119,8 @@ pub fn generate_u64_os() -> Result<u64> {
 /// If the CPU does not support RDRAND, the function will return an error.
 /// This effectively limits the program to only run on Intel & AMD CPUs.
 pub fn generate_u64_rdrand() -> Result<u64> {
-    let mut result: u64 = 0;
-    let mut success: i8 = 0;
+    let mut result: u64;
+    let mut success: i8;
 
     unsafe {
         asm!(
