@@ -4,6 +4,8 @@ use std::{process, str::FromStr};
 pub enum Error {
     #[error("Attempting to access non-existent character of index {0}.")]
     NonExistentCharacter(usize),
+    #[error("Invalid UTF-8 in alphabet for index {0}")]
+    InvalidUtf8(usize),
     #[error("Invalid alphabet: {0}")]
     InvalidAlphabet(String),
 }

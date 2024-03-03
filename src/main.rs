@@ -85,7 +85,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // get the corresponding alphabet element
             let random_index = (random_value % alphabet.count() as u64) as usize;
-            let random_element = alphabet.item(random_index).unwrap();
+            let random_element = alphabet.item(random_index)?;
             password_string.push_str(&random_element);
             if i < num_elements - 1 {
                 password_string.push_str(&config.delimiter);

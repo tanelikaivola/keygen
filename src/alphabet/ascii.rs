@@ -19,7 +19,7 @@ impl Alphabet for Ascii {
         }
 
         let c = n as u8 + PRINTABLE_ASCII_START as u8;
-        let str = String::from_utf8(vec![c]).unwrap();
+        let str = String::from_utf8(vec![c]).map_err(|_| Error::InvalidUtf8(n))?;
         Ok(str)
     }
 }
