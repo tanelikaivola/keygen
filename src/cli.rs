@@ -39,7 +39,7 @@ pub fn get_matches() -> ArgMatches<'static> {
                 .short("d")
                 .long("delimiter")
                 .value_name("DELIMITER")
-                .requires_all(&["bits", "alphabet"])
+                .requires_all(&["alphabet"])
                 .help("Sets the delimiter between each letter or word")
                 .takes_value(true),
         )
