@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let num_values = *data_size as u64;
 
         // Choose the appropriate generator function based on the selected generator
-        let generator_fn: fn() -> Option<u64> = match generator {
+        let generator_fn: fn() -> Result<u64, _> = match generator {
             RandomSource::Rdrand => random::generate_u64_rdrand,
             RandomSource::Os => random::generate_u64_os,
             RandomSource::CpuJitter => random::generate_u64_cpujitter,
@@ -41,8 +41,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         for _ in 0..num_values {
-            if let Some(value) = generator_fn() {
-                data_format.print_formatted_value(value);
+            match generator_fn() {
+                Ok(value) => {
+                    data_format.print_formatted_value(value);
+                }
+                Err(e) => return Err(e.into()),
             }
         }
 
@@ -61,8 +64,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let num_elements = (config.bits as f64 / bits_per_element as f64).ceil() as u32;
 
     if config.debug {
-        println!("Bits per element: {}", bits_per_element);
-        println!("Num of elements: {}", num_elements);
+        println!("Bits per element: {bits_per_element}");
+        println!("Num of elements: {num_elements}");
     }
 
     // Create the password(s)
@@ -73,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // pull out a random value that does not result in modulo bias
             let random_value = {
                 loop {
-                    let val = generate_u64().unwrap();
+                    let val = generate_u64()?;
                     if val <= (u64::MAX - (alphabet.count() as u64)) {
                         break val;
                     }
