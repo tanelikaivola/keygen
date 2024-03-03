@@ -253,7 +253,7 @@ static ALPHABET_ASSEMBLY: &[&str] = &[
     "sametti",
 ];
 
-/// Assembly wordlist ripped from: https://gitlab.com/Aketzu/ruttu/-/blob/master/lib/codegen.rb
+/// Assembly wordlist ripped from: <https://gitlab.com/Aketzu/ruttu/-/blob/master/lib/codegen.rb>
 pub struct Assembly {}
 
 impl Alphabet for Assembly {
