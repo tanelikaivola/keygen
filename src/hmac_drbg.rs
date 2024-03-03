@@ -40,6 +40,7 @@ impl HmacDrbg {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     pub fn generate_bytes(&mut self, requested_bytes: usize) -> Result<Vec<u8>> {
         if self.reseed_counter > MAX_RESEED_INTERVAL {
             return Err(Error::ReseedIntervalReached);

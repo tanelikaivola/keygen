@@ -217,6 +217,7 @@ fn generate_personalization_string() -> Result<[u8; 32]> {
 
     // Compare with previous timestamp
     {
+        #[allow(clippy::unwrap_used)]
         let mut prev_timestamp = PREVIOUS_TIMESTAMP.lock().unwrap();
         if timestamp_secs < prev_timestamp.0
             || (timestamp_secs == prev_timestamp.0 && timestamp_nanos <= prev_timestamp.1)

@@ -19,6 +19,7 @@ pub trait Alphabet {
     fn count(&self) -> usize;
     fn item(&self, n: usize) -> Result<String>;
     fn bits_per_element(&self) -> f64 {
+        #[allow(clippy::cast_precision_loss)]
         (self.count() as f64).log2()
     }
 }

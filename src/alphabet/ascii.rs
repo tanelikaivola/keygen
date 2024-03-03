@@ -19,6 +19,7 @@ impl Alphabet for Ascii {
             return Err(Error::NonExistentCharacter(n));
         }
 
+        #[allow(clippy::cast_possible_truncation)]
         let c = n as u8 + PRINTABLE_ASCII_START as u8;
         let str = String::from_utf8(vec![c]).map_err(|_| Error::InvalidUtf8(n))?;
         Ok(str)
