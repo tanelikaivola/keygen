@@ -1,7 +1,4 @@
-#[path = "hmac_drbg.rs"]
-mod hmac_drbg;
-use hmac_drbg::HmacDrbg;
-
+use crate::hmac_drbg::HmacDrbg;
 use getrandom::getrandom;
 use lazy_static::lazy_static;
 use std::arch::asm;

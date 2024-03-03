@@ -1,11 +1,11 @@
 #![allow(unused_imports)]
 #![allow(unused_assignments)]
 
-#[path = "random.rs"]
+mod hmac_drbg;
+
 mod random;
 use random::{generate_u64, generate_u64_cpujitter, generate_u64_os, generate_u64_rdrand};
 
-#[path = "alphabet.rs"]
 mod alphabet;
 use alphabet::{
     alphabet_ascii_get_count, alphabet_ascii_get_element, alphabet_assembly_get_count,
