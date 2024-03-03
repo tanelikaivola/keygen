@@ -10,6 +10,7 @@ use tiny_keccak::Hasher;
 use tiny_keccak::Sha3;
 use zeroize::Zeroize;
 
+#[allow(dead_code)]
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("RDRAND failed")]
@@ -24,6 +25,10 @@ pub enum Error {
     BackwardsTimeTravel,
     #[error("Unable to convert bytes to u64")]
     ByteConversion(#[from] std::array::TryFromSliceError),
+    #[error("Entropy pool is low {0}")]
+    NotEnoughEntropy(u64),
+    #[error("Unable to read entropy pool from /proc/sys/kernel/random/entropy_avail")]
+    EntropyPoolUnavailable,
 }
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -66,28 +71,26 @@ impl fmt::Debug for BitVector {
 }
 
 #[cfg(target_os = "linux")]
-fn check_entropy_pool() {
+fn check_entropy_pool() -> Result<()> {
     const MIN_ENTROPY_THRESHOLD: u64 = 200; // Adjust this threshold as needed
 
     if let Ok(entropy_avail) = read_to_string("/proc/sys/kernel/random/entropy_avail") {
         let entropy_avail: u64 = entropy_avail.trim().parse().unwrap_or(0);
 
         if entropy_avail < MIN_ENTROPY_THRESHOLD {
-            eprintln!(
-                "Error: Entropy pool is low ({} bytes). Exiting.",
-                entropy_avail
-            );
-            process::exit(1);
+            return Err(Error::NotEnoughEntropy(entropy_avail));
         }
     } else {
-        eprintln!("Error: Failed to read entropy_avail. Cannot check entropy pool.");
-        process::exit(1);
+        return Err(Error::EntropyPoolUnavailable);
     }
+    Ok(())
 }
 
+#[allow(clippy::unnecessary_wraps)]
 #[cfg(not(target_os = "linux"))]
-fn check_entropy_pool() {
+const fn check_entropy_pool() -> Result<()> {
     // On non-Linux systems (e.g., Windows), we can not check the amount of entropy available.
+    Ok(())
 }
 
 /* Return U64 random number from the OS.
@@ -98,7 +101,7 @@ fn check_entropy_pool() {
 pub fn generate_u64_os() -> Result<u64> {
     let mut random_bytes = [0u8; 8];
 
-    check_entropy_pool();
+    check_entropy_pool()?;
 
     if getrandom(&mut random_bytes).is_ok() {
         let random_u64 = u64::from_le_bytes(random_bytes);
