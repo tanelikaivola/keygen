@@ -1,29 +1,21 @@
 //! Generates random passwords and keys.
 
-#![allow(unused_imports)]
-#![allow(unused_assignments)]
-
 mod hmac_drbg;
 
 mod random;
-use random::{generate_u64, generate_u64_cpujitter, generate_u64_os, generate_u64_rdrand};
+use random::generate_u64;
 
 mod alphabet;
 use alphabet::Alphabet;
-use zeroize::Zeroize;
 
 mod numformat;
-use numformat::{print_formatted_value, NumFormat, PrintFormattedValue};
+use numformat::PrintFormattedValue;
 
 mod randomsource;
 use randomsource::RandomSource;
 
-use std::env;
-use std::fmt;
-use std::str::FromStr;
-
 mod cli;
-use cli::{Cli, Parser};
+use cli::Parser;
 mod config;
 use config::Config;
 

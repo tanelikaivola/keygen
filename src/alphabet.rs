@@ -1,7 +1,5 @@
 //! Alphabet definitions
 
-use std::{process, str::FromStr};
-
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Attempting to access non-existent character of index {0}.")]

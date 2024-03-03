@@ -1,5 +1,3 @@
-use std::fmt;
-
 pub use clap::{Parser, ValueEnum};
 
 use crate::{numformat::NumFormat, randomsource::RandomSource};

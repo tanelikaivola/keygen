@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::{numformat::NumFormat, randomsource::RandomSource};
 
 pub struct Config {

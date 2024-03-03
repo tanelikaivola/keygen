@@ -3,8 +3,6 @@ use getrandom::getrandom;
 use lazy_static::lazy_static;
 use std::arch::asm;
 use std::fmt;
-use std::fs::read_to_string;
-use std::process;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tiny_keccak::Hasher;
 use tiny_keccak::Sha3;
