@@ -100,7 +100,7 @@ pub fn generate_u64_os() -> Result<u64> {
 
     check_entropy_pool();
 
-    if let Ok(_) = getrandom(&mut random_bytes) {
+    if getrandom(&mut random_bytes).is_ok() {
         let random_u64 = u64::from_le_bytes(random_bytes);
         Ok(random_u64)
     } else {
