@@ -1,10 +1,9 @@
-/* hmac_drbg.rs
-
-   Attempts to implement HMAC DRBG from NIST SP 800-90A Rev. 1. Chapter 10.1.2.
-   https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-90Ar1.pdf
-
-   No reseeding support, or any guarantees that this is correct.
-*/
+//! Implementation of HMAC deterministic random bit generator.
+//!
+//! Attempts to implement HMAC DRBG from NIST SP 800-90A Rev. 1. Chapter 10.1.2.
+//! <https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-90Ar1.pdf>
+//!
+//! No reseeding support, or any guarantees that this is correct.
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

@@ -1,3 +1,5 @@
+//! Assembly wordlist ripped from: <https://gitlab.com/Aketzu/ruttu/-/blob/master/lib/codegen.rb>
+
 use super::{Alphabet, Error, Result};
 
 static ALPHABET_ASSEMBLY: &[&str] = &[
@@ -253,7 +255,6 @@ static ALPHABET_ASSEMBLY: &[&str] = &[
     "sametti",
 ];
 
-/// Assembly wordlist ripped from: <https://gitlab.com/Aketzu/ruttu/-/blob/master/lib/codegen.rb>
 pub struct Assembly {}
 
 impl Alphabet for Assembly {

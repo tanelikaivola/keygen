@@ -1,6 +1,7 @@
+//! Complete printable ASCII charset as wordlist
+
 use super::{Alphabet, Error, Result};
 
-/// Complete printable ASCII charset
 pub struct Ascii {}
 
 impl Alphabet for Ascii {

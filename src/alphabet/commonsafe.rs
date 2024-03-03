@@ -1,3 +1,5 @@
+//! Common and safe characters to use with various different keymaps. The default.
+
 use super::{Alphabet, Error, Result};
 
 static ALPHABET_COMMONSAFE: &[char] = &[
@@ -6,7 +8,6 @@ static ALPHABET_COMMONSAFE: &[char] = &[
     'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
 ];
 
-/// Common and safe characters to use with various different keymaps. The default.
 pub struct CommonSafe {}
 
 impl Alphabet for CommonSafe {

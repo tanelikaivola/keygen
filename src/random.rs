@@ -12,6 +12,7 @@ use zeroize::Zeroize;
 
 #[allow(dead_code)]
 #[derive(thiserror::Error, Debug)]
+/// Errors for random number generation
 pub enum Error {
     #[error("RDRAND failed")]
     RdrandFailed,
@@ -95,11 +96,11 @@ const fn check_entropy_pool() -> Result<()> {
     Ok(())
 }
 
-/* Return U64 random number from the OS.
-   On Linux will use getrandom() syscall. Fallback to /dev/urandom and /dev/random
-   On Windows will use BCryptGenRandom() API.
-   On MacOS will use getentropy(). Fallback to /dev/urandom
-*/
+/// Return U64 random number from the OS.
+///
+/// On Linux will use `getrandom()` syscall. Fallback to /dev/urandom and /dev/random
+/// On Windows will use `BCryptGenRandom()` API.
+/// On MacOS will use `getentropy()`. Fallback to /dev/urandom
 pub fn generate_u64_os() -> Result<u64> {
     let mut random_bytes = [0u8; 8];
 
@@ -113,10 +114,10 @@ pub fn generate_u64_os() -> Result<u64> {
     }
 }
 
-/* Return U64 random number from the CPU RDRAND instruction.
-   If the CPU does not support RDRAND, the program will exit.
-   This effectively limits the program to only run on Intel & AMD CPUs.
-*/
+/// Return U64 random number from the CPU RDRAND instruction.
+///
+/// If the CPU does not support RDRAND, the function will return an error.
+/// This effectively limits the program to only run on Intel & AMD CPUs.
 pub fn generate_u64_rdrand() -> Result<u64> {
     let mut result: u64 = 0;
     let mut success: i8 = 0;
@@ -136,11 +137,12 @@ pub fn generate_u64_rdrand() -> Result<u64> {
     }
 }
 
-// generate_u64_cpujitter()
-// SHA3 (Keccack) is used to provide a u64 random number from 512 bits of cpujitter entropy bits.
-// Rationale for this is that the cpujitter is not 100% random, but it is still a good source of entropy.
-// Also, using the HMAC DRBG with the current personalization string (*that contains the timestamp*)
-// would result in difficulties when estimating the randomness of the generated random numbers.
+/// Return U64 random number from CPU jitter.
+///
+/// SHA3 (Keccack) is used to provide a u64 random number from 512 bits of cpujitter entropy bits.
+/// Rationale for this is that the cpujitter is not 100% random, but it is still a good source of entropy.
+/// Also, using the HMAC DRBG with the current personalization string (*that contains the timestamp*)
+/// would result in difficulties when estimating the randomness of the generated random numbers.
 pub fn generate_u64_cpujitter() -> Result<u64> {
     // Let's take 512 (8 * 64) bits of cpujitter entropy
     let mut combined_data = Vec::new();
@@ -163,7 +165,7 @@ pub fn generate_u64_cpujitter() -> Result<u64> {
     vec_u8_to_u64(&hash_result[..8])
 }
 
-/* Returns U64 from collected CPU jitter. The amount of raw entropy is around 6bits / byte. */
+/// Returns U64 from collected CPU jitter. The amount of raw entropy is around 6bits / byte.
 pub fn generate_u64_cpujitter_raw() -> Result<u64> {
     let mut bit_vector = BitVector::new();
     let mut loop_count = 0;
@@ -204,9 +206,8 @@ lazy_static! {
     static ref PREVIOUS_TIMESTAMP: std::sync::Mutex<(u64, u32)> = std::sync::Mutex::new((0, 0));
 }
 
-/* Personalization string combines a fixed string ("kissa123", Finnish for cat123) and both seconds and nanoseconds
-   of current timestamp. This ensures that the personalization string is unique for each call.
-*/
+/// Personalization string combines a fixed string ("kissa123", Finnish for cat123) and both seconds and nanoseconds
+/// of current timestamp. This ensures that the personalization string is unique for each call.
 fn generate_personalization_string() -> Result<[u8; 32]> {
     let mut personalization_string: [u8; 32] = [0; 32];
 
@@ -215,14 +216,16 @@ fn generate_personalization_string() -> Result<[u8; 32]> {
     let timestamp_nanos = timestamp.subsec_nanos();
 
     // Compare with previous timestamp
-    let mut prev_timestamp = PREVIOUS_TIMESTAMP.lock().unwrap();
-    if timestamp_secs < prev_timestamp.0
-        || (timestamp_secs == prev_timestamp.0 && timestamp_nanos <= prev_timestamp.1)
     {
-        return Err(Error::BackwardsTimeTravel);
-    }
+        let mut prev_timestamp = PREVIOUS_TIMESTAMP.lock().unwrap();
+        if timestamp_secs < prev_timestamp.0
+            || (timestamp_secs == prev_timestamp.0 && timestamp_nanos <= prev_timestamp.1)
+        {
+            return Err(Error::BackwardsTimeTravel);
+        }
 
-    *prev_timestamp = (timestamp_secs, timestamp_nanos);
+        *prev_timestamp = (timestamp_secs, timestamp_nanos);
+    }
 
     // Copy the string bytes
     let hardcoded_str = "kissa123";
@@ -239,10 +242,11 @@ fn generate_personalization_string() -> Result<[u8; 32]> {
     Ok(personalization_string)
 }
 
-// Generate a random u64 combining three different sources
+/// Generate a random u64 combining three different sources
+///
+/// Generate a 1536 bit seed from three different random number sources.
+/// Thats 8 * 64 = 512 bits from each source.
 pub fn generate_u64() -> Result<u64, Error> {
-    // Generate a 1536 bit seed from three different random number sources.
-    // Thats 8 * 64 = 512 bits from each source.
     let mut seed: Vec<u8> = Vec::new();
 
     for _ in 0..8 {

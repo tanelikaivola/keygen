@@ -1,3 +1,4 @@
+//! "Normal characters" wordlist
 use super::{Alphabet, Error, Result};
 
 static ALPHABET_NORMAL: &[char] = &[
@@ -7,7 +8,6 @@ static ALPHABET_NORMAL: &[char] = &[
     'V', 'W', 'X', 'Y', 'Z',
 ];
 
-/// "Normal characters"
 pub struct Normal {}
 
 impl Alphabet for Normal {

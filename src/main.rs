@@ -1,3 +1,5 @@
+//! Generates random passwords and keys.
+
 #![allow(unused_imports)]
 #![allow(unused_assignments)]
 
@@ -49,8 +51,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        std::process::exit(0);
+        return Ok(());
     }
+
     let alphabet: Box<dyn Alphabet> = config.alphabet.parse()?;
 
     if config.debug {

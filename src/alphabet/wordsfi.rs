@@ -1,6 +1,9 @@
 //! Finnish wordlist from Kotus
-//! processed with:
+//!
+//! The list has been processed with:
+//! ```sh
 //! cat nykysuomensanalista2022.csv | grep -ve "-" -e "z" -e "Z" -e "ä" -e "Ä" -e "ö" -e "Ö" -e "š" | awk {'print $1'} | tr '[:upper:]' '[:lower:]' | grep -wE '\w{3,8}' | sort | uniq > sanat.txt
+//! ```
 
 use super::{Alphabet, Error, Result};
 

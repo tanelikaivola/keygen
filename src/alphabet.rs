@@ -1,3 +1,5 @@
+//! Alphabet definitions
+
 use std::{process, str::FromStr};
 
 #[derive(thiserror::Error, Debug)]
@@ -12,6 +14,7 @@ pub enum Error {
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
+/// Alphabet trait for getting items from an alphabet definition
 pub trait Alphabet {
     fn count(&self) -> usize;
     fn item(&self, n: usize) -> Result<String>;
