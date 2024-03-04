@@ -249,17 +249,9 @@ pub fn generate_u64() -> Result<u64, Error> {
     let mut seed: Vec<u8> = Vec::new();
 
     for _ in 0..8 {
-        let val = generate_u64_os()?;
-        let u64_bytes = val.to_be_bytes();
-        seed.extend_from_slice(&u64_bytes);
-
-        let val = generate_u64_rdrand()?;
-        let u64_bytes = val.to_be_bytes();
-        seed.extend_from_slice(&u64_bytes);
-
-        let val = generate_u64_cpujitter()?;
-        let u64_bytes = val.to_be_bytes();
-        seed.extend_from_slice(&u64_bytes);
+        seed.extend_from_slice(&generate_u64_os()?.to_be_bytes());
+        seed.extend_from_slice(&generate_u64_rdrand()?.to_be_bytes());
+        seed.extend_from_slice(&generate_u64_cpujitter()?.to_be_bytes());
     }
 
     // Generate a deterministic, but each time unique, personalization string
