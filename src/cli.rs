@@ -22,13 +22,7 @@ pub struct Cli {
     pub count: usize,
 
     /// Sets the delimiter between each letter or word
-    #[clap(
-        short,
-        long,
-        value_name = "DELIMITER",
-        requires = "alphabet",
-        default_value = ""
-    )]
+    #[clap(short, long, requires = "alphabet", default_value = "")]
     pub delimiter: String,
 
     /// Optional test mode for RNG testing. Will provide raw bytes to stdout.
