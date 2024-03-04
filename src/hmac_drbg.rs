@@ -40,6 +40,24 @@ impl HmacDrbg {
         }
     }
 
+    /// Returns a vec of random.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # fn test() -> Result<(), Box<dyn std::error::Error>> {
+    /// use keygen::hmac_drbg::HmacDrbg;
+    /// let seed = [0u8; 32]; // change these to something more random
+    /// let personalization_string = [0u8; 32];
+    /// let mut drbg = HmacDrbg::new(&seed, &personalization_string);
+    /// let random_bytes: Vec<u8> = drbg.generate_bytes(80)?;
+    /// assert_eq!(random_bytes.len(), 80);
+    /// # Ok(()) }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if reseed interval is reached.
     #[allow(clippy::cast_possible_truncation)]
     pub fn generate_bytes(&mut self, requested_bytes: usize) -> Result<Vec<u8>> {
         if self.reseed_counter > MAX_RESEED_INTERVAL {
