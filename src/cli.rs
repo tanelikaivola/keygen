@@ -1,4 +1,5 @@
-use crate::{numformat::NumFormat, randomsource::RandomSource};
+use crate::numformat::NumFormat;
+use crate::random::Source;
 pub use clap::{Parser, ValueEnum};
 
 #[derive(Parser, Debug)]
@@ -27,7 +28,7 @@ pub struct Cli {
 
     /// Optional test mode for RNG testing. Will provide raw bytes to stdout.
     #[clap(short, long, conflicts_with_all = &["bits", "alphabet", "count"])]
-    pub rngtest: Option<RandomSource>,
+    pub rngtest: Option<Source>,
 
     /// Specifies the generated data size in u64 words for RNG testing.
     #[clap(short = 's', long, requires = "rngtest", conflicts_with_all = &["bits", "alphabet", "count"], default_value_t = 1)]

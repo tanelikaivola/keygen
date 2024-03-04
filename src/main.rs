@@ -3,16 +3,13 @@
 mod hmac_drbg;
 
 mod random;
-use random::generate_u64;
+use random::Generator;
 
 mod alphabet;
 use alphabet::Alphabet;
 
 mod numformat;
 use numformat::PrintFormattedValue;
-
-mod randomsource;
-use randomsource::RandomSource;
 
 mod cli;
 use cli::Parser;
@@ -29,17 +26,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let num_values = u64::from(data_size);
 
-        // Choose the appropriate generator function based on the selected generator
-        let generator_fn: fn() -> Result<u64, _> = match generator {
-            RandomSource::Rdrand => random::generate_u64_rdrand,
-            RandomSource::Os => random::generate_u64_os,
-            RandomSource::Cpujitter => random::generate_u64_cpujitter,
-            RandomSource::CpujitterRaw => random::generate_u64_cpujitter_raw,
-            RandomSource::Combined => unimplemented!(),
-        };
-
         for _ in 0..num_values {
-            match generator_fn() {
+            match generator.generate_u64() {
                 Ok(value) => {
                     data_format.print_formatted_value(value);
                 }
@@ -80,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // pull out a random value that does not result in modulo bias
             let random_value = {
                 loop {
-                    let val = generate_u64()?;
+                    let val = random::OsRand {}.generate_u64()?;
                     if val <= (u64::MAX - (alphabet.count() as u64)) {
                         break val;
                     }

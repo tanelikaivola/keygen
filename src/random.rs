@@ -1,9 +1,13 @@
 use crate::bitvector::BitVector;
 use crate::hmac_drbg::HmacDrbg;
+use clap::ValueEnum;
 use getrandom::getrandom;
 use lazy_static::lazy_static;
-use std::arch::asm;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{arch::asm, fmt};
+use std::{
+    str::FromStr,
+    time::{SystemTime, UNIX_EPOCH},
+};
 use tiny_keccak::Hasher;
 use tiny_keccak::Sha3;
 use zeroize::Zeroize;
@@ -60,21 +64,29 @@ const fn check_entropy_pool() -> Result<()> {
     Ok(())
 }
 
+pub trait Generator {
+    fn generate_u64(&self) -> Result<u64>;
+}
+
 /// Return U64 random number from the OS.
 ///
 /// On Linux will use `getrandom()` syscall. Fallback to /dev/urandom and /dev/random
 /// On Windows will use `BCryptGenRandom()` API.
 /// On macOS will use `getentropy()`. Fallback to /dev/urandom
-pub fn generate_u64_os() -> Result<u64> {
-    let mut random_bytes = [0u8; 8];
+pub struct OsRand {}
 
-    check_entropy_pool()?;
+impl Generator for OsRand {
+    fn generate_u64(&self) -> Result<u64> {
+        let mut random_bytes = [0u8; 8];
 
-    if getrandom(&mut random_bytes).is_ok() {
-        let random_u64 = u64::from_le_bytes(random_bytes);
-        Ok(random_u64)
-    } else {
-        Err(Error::OSRandFailed)
+        check_entropy_pool()?;
+
+        if getrandom(&mut random_bytes).is_ok() {
+            let random_u64 = u64::from_le_bytes(random_bytes);
+            Ok(random_u64)
+        } else {
+            Err(Error::OSRandFailed)
+        }
     }
 }
 
@@ -82,22 +94,26 @@ pub fn generate_u64_os() -> Result<u64> {
 ///
 /// If the CPU does not support RDRAND, the function will return an error.
 /// This effectively limits the program to only run on Intel & AMD CPUs.
-pub fn generate_u64_rdrand() -> Result<u64> {
-    let mut result: u64;
-    let mut success: i8;
+pub struct RdRand {}
 
-    unsafe {
-        asm!(
-            "rdrand {0}; setc {1}",
-            out(reg) result,
-            out(reg_byte) success,
-        );
-    }
+impl Generator for RdRand {
+    fn generate_u64(&self) -> Result<u64> {
+        let mut result: u64;
+        let mut success: i8;
 
-    if success != 0 {
-        Ok(result)
-    } else {
-        Err(Error::RdrandFailed)
+        unsafe {
+            asm!(
+                "rdrand {0}; setc {1}",
+                out(reg) result,
+                out(reg_byte) success,
+            );
+        }
+
+        if success != 0 {
+            Ok(result)
+        } else {
+            Err(Error::RdrandFailed)
+        }
     }
 }
 
@@ -107,63 +123,72 @@ pub fn generate_u64_rdrand() -> Result<u64> {
 /// Rationale for this is that the cpujitter is not 100% random, but it is still a good source of entropy.
 /// Also, using the HMAC DRBG with the current personalization string (*that contains the timestamp*)
 /// would result in difficulties when estimating the randomness of the generated random numbers.
-pub fn generate_u64_cpujitter() -> Result<u64> {
-    // Let's take 512 (8 * 64) bits of cpujitter entropy
-    let mut combined_data = Vec::new();
-    for _ in 0..8 {
-        match generate_u64_cpujitter_raw() {
-            Ok(raw_value) => {
-                combined_data.extend_from_slice(raw_value.to_be_bytes().as_ref());
+pub struct CpuJitter {}
+
+impl Generator for CpuJitter {
+    fn generate_u64(&self) -> Result<u64> {
+        // Let's take 512 (8 * 64) bits of cpujitter entropy
+        let mut combined_data = Vec::new();
+        let cpujitterraw = CpuJitterRaw {};
+        for _ in 0..8 {
+            match cpujitterraw.generate_u64() {
+                Ok(raw_value) => {
+                    combined_data.extend_from_slice(raw_value.to_be_bytes().as_ref());
+                }
+                Err(e) => return Err(e),
             }
-            Err(e) => return Err(e),
         }
+
+        // Hash the combined data with SHA3 (Keccak)
+        let mut sha3 = Sha3::v256();
+        let mut hash_result = [0u8; 32];
+        sha3.update(&combined_data);
+        sha3.finalize(&mut hash_result);
+
+        // Return the first 64 bits as u64
+        vec_u8_to_u64(&hash_result[..8])
     }
-
-    // Hash the combined data with SHA3 (Keccak)
-    let mut sha3 = Sha3::v256();
-    let mut hash_result = [0u8; 32];
-    sha3.update(&combined_data);
-    sha3.finalize(&mut hash_result);
-
-    // Return the first 64 bits as u64
-    vec_u8_to_u64(&hash_result[..8])
 }
 
 /// Returns U64 from collected CPU jitter. The amount of raw entropy is around 6bits / byte.
-pub fn generate_u64_cpujitter_raw() -> Result<u64> {
-    let mut bit_vector = BitVector::new();
-    let mut loop_count = 0;
+pub struct CpuJitterRaw {}
 
-    loop {
-        let start = std::time::Instant::now();
-        let end = std::time::Instant::now();
-        let time_diff1 = end.duration_since(start).as_nanos();
+impl Generator for CpuJitterRaw {
+    fn generate_u64(&self) -> Result<u64> {
+        let mut bit_vector = BitVector::new();
+        let mut loop_count = 0;
 
-        let start = std::time::Instant::now();
-        let end = std::time::Instant::now();
-        let time_diff2 = end.duration_since(start).as_nanos();
+        loop {
+            let start = std::time::Instant::now();
+            let end = std::time::Instant::now();
+            let time_diff1 = end.duration_since(start).as_nanos();
 
-        if time_diff1 != time_diff2 {
-            if time_diff1 > time_diff2 {
-                bit_vector.add_bit(true);
-            } else {
-                bit_vector.add_bit(false);
+            let start = std::time::Instant::now();
+            let end = std::time::Instant::now();
+            let time_diff2 = end.duration_since(start).as_nanos();
+
+            if time_diff1 != time_diff2 {
+                if time_diff1 > time_diff2 {
+                    bit_vector.add_bit(true);
+                } else {
+                    bit_vector.add_bit(false);
+                }
+            }
+
+            // Check if the BitVector is full or if the loop count has reached maximum number of tries.
+            if bit_vector.is_full() {
+                break;
+            }
+
+            loop_count += 1;
+            if loop_count >= 32768 {
+                return Err(Error::CpuJitterFailed);
             }
         }
 
-        // Check if the BitVector is full or if the loop count has reached maximum number of tries.
-        if bit_vector.is_full() {
-            break;
-        }
-
-        loop_count += 1;
-        if loop_count >= 32768 {
-            return Err(Error::CpuJitterFailed);
-        }
+        let result = bit_vector.to_u64();
+        Ok(result)
     }
-
-    let result = bit_vector.to_u64();
-    Ok(result)
 }
 
 lazy_static! {
@@ -211,25 +236,80 @@ fn generate_personalization_string() -> Result<[u8; 32]> {
 ///
 /// Generate a 1536 bit seed from three different random number sources.
 /// Thats 8 * 64 = 512 bits from each source.
-pub fn generate_u64() -> Result<u64, Error> {
-    let mut seed: Vec<u8> = Vec::new();
+pub struct Combined {}
 
-    for _ in 0..8 {
-        seed.extend_from_slice(&generate_u64_os()?.to_be_bytes());
-        seed.extend_from_slice(&generate_u64_rdrand()?.to_be_bytes());
-        seed.extend_from_slice(&generate_u64_cpujitter()?.to_be_bytes());
+impl Generator for Combined {
+    fn generate_u64(&self) -> Result<u64> {
+        let mut seed: Vec<u8> = Vec::new();
+
+        let osrand = OsRand {};
+        let rdrand = RdRand {};
+        let cpujitter = CpuJitter {};
+
+        for _ in 0..8 {
+            seed.extend_from_slice(&osrand.generate_u64()?.to_be_bytes());
+            seed.extend_from_slice(&rdrand.generate_u64()?.to_be_bytes());
+            seed.extend_from_slice(&cpujitter.generate_u64()?.to_be_bytes());
+        }
+
+        // Generate a deterministic, but each time unique, personalization string
+        let mut personalization_string: [u8; 32] = generate_personalization_string()?;
+
+        // Generate the u64 random number using HMAC DRBG
+        let mut drbg = HmacDrbg::new(&seed, &personalization_string);
+        let random_bytes = drbg.generate_bytes(8)?;
+        let random_value = vec_u8_to_u64(&random_bytes);
+
+        personalization_string.zeroize();
+        seed.zeroize();
+
+        random_value
     }
+}
 
-    // Generate a deterministic, but each time unique, personalization string
-    let mut personalization_string: [u8; 32] = generate_personalization_string()?;
+#[derive(ValueEnum, Clone)]
+pub enum Source {
+    Combined,
+    Rdrand,
+    Os,
+    Cpujitter,
+    CpujitterRaw,
+}
 
-    // Generate the u64 random number using HMAC DRBG
-    let mut drbg = HmacDrbg::new(&seed, &personalization_string);
-    let random_bytes = drbg.generate_bytes(8)?;
-    let random_value = vec_u8_to_u64(&random_bytes);
+impl fmt::Debug for Source {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Combined => write!(f, "combined"),
+            Self::Rdrand => write!(f, "rdrand"),
+            Self::Os => write!(f, "os"),
+            Self::Cpujitter => write!(f, "cpujitter"),
+            Self::CpujitterRaw => write!(f, "cpujitter-raw"),
+        }
+    }
+}
 
-    personalization_string.zeroize();
-    seed.zeroize();
-
-    random_value
+impl FromStr for Source {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "combined" => Ok(Self::Combined),
+            "rdrand" => Ok(Self::Rdrand),
+            "os" => Ok(Self::Os),
+            "cpujitter" => Ok(Self::Cpujitter),
+            "cpujitter-raw" => Ok(Self::CpujitterRaw),
+            _ => Err(format!("Unknown source: {s}")),
+        }
+    }
+}
+impl Generator for Source {
+    fn generate_u64(&self) -> Result<u64> {
+        let source: Box<&dyn Generator> = match self {
+            Self::Combined => Box::new(&Combined {}),
+            Self::Rdrand => Box::new(&RdRand {}),
+            Self::Os => Box::new(&OsRand {}),
+            Self::Cpujitter => Box::new(&CpuJitter {}),
+            Self::CpujitterRaw => Box::new(&CpuJitterRaw {}),
+        };
+        source.generate_u64()
+    }
 }
