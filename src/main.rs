@@ -16,14 +16,16 @@ use randomsource::RandomSource;
 
 mod cli;
 use cli::Parser;
-mod config;
-use config::Config;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let config: Config = cli::Cli::parse().into();
+    let cli = cli::Cli::parse();
 
-    if let Some((generator, data_size, data_format)) = &config.rngtest {
-        let num_values = u64::from(*data_size);
+    if let Some(rngtest) = cli.rngtest {
+        let generator = rngtest;
+        let data_size = cli.size;
+        let data_format = cli.format;
+
+        let num_values = u64::from(data_size);
 
         // Choose the appropriate generator function based on the selected generator
         let generator_fn: fn() -> Result<u64, _> = match generator {
@@ -46,12 +48,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    let alphabet: Box<dyn Alphabet> = config.alphabet.into();
+    let alphabet: Box<dyn Alphabet> = cli.alphabet.into();
 
-    if config.debug {
-        println!("Using alphabet: {:?}", config.alphabet);
+    if cli.debug {
+        println!("Using alphabet: {:?}", cli.alphabet);
         println!("alphabet_count: {}", alphabet.count());
-        println!("request bits: {}", config.bits);
+        println!("request bits: {}", cli.bits);
     }
 
     // Find the number of characters needed
@@ -61,15 +63,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         clippy::cast_lossless,
         clippy::cast_sign_loss
     )]
-    let num_elements = (config.bits as f64 / bits_per_element).ceil() as u32;
+    let num_elements = (cli.bits as f64 / bits_per_element).ceil() as u32;
 
-    if config.debug {
+    if cli.debug {
         println!("Bits per element: {bits_per_element}");
         println!("Num of elements: {num_elements}");
     }
 
     // Create the password(s)
-    for _ in 0..config.count {
+    for _ in 0..cli.count {
         let mut password_string = String::new();
 
         for i in 0..num_elements {
@@ -88,7 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let random_element = alphabet.item(random_index)?;
             password_string.push_str(&random_element);
             if i < num_elements - 1 {
-                password_string.push_str(&config.delimiter);
+                password_string.push_str(&cli.delimiter);
             }
         }
 
