@@ -5,6 +5,8 @@
 //!
 //! No reseeding support, or any guarantees that this is correct.
 
+#![allow(dead_code)]
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Reseed interval reached")]
