@@ -1,8 +1,8 @@
+use crate::bitvector::BitVector;
 use crate::hmac_drbg::HmacDrbg;
 use getrandom::getrandom;
 use lazy_static::lazy_static;
 use std::arch::asm;
-use std::fmt;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tiny_keccak::Hasher;
 use tiny_keccak::Sha3;
@@ -35,40 +35,6 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 fn vec_u8_to_u64(bytes: &[u8]) -> Result<u64> {
     Ok(u64::from_be_bytes(bytes.try_into()?))
-}
-
-struct BitVector {
-    bits: Vec<bool>,
-}
-
-impl BitVector {
-    const fn new() -> Self {
-        Self { bits: Vec::new() }
-    }
-
-    fn add_bit(&mut self, bit: bool) {
-        self.bits.push(bit);
-    }
-
-    fn is_full(&self) -> bool {
-        self.bits.len() == 64
-    }
-
-    fn to_u64(&self) -> u64 {
-        let mut result: u64 = 0;
-        for (i, &bit) in self.bits.iter().enumerate() {
-            if bit {
-                result |= 1u64 << i;
-            }
-        }
-        result
-    }
-}
-
-impl fmt::Debug for BitVector {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "BitVector {{ bits: {:?} }}", self.bits)
-    }
 }
 
 #[cfg(target_os = "linux")]

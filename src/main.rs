@@ -17,6 +17,8 @@ use randomsource::RandomSource;
 mod cli;
 use cli::Parser;
 
+mod bitvector;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = cli::Cli::parse();
 
